@@ -1,24 +1,24 @@
-import Product from '../models/product.js'
+import Product from '../models/product.js';
+import { controlarStock } from '../helper/stock_helper.js';
 
-// Función para generar un código de barras único  PROBAR QUE NO SE DUPLIQUEN CODIGOS DE BARRA
+// Genera un código de barras válido con dígito de control
 const generarCodigoBarras = () => {
     let codigo = "";
-
     for (let i = 0; i < 12; i++) {
         codigo += Math.floor(Math.random() * 10);
     }
 
     let suma = 0;
     for (let i = 0; i < 12; i++) {
-        let num = parseInt(codigo[i]);
+        const num = parseInt(codigo[i]);
         suma += (i % 2 === 0) ? num : num * 3;
     }
-    let digitoControl = (10 - (suma % 10)) % 10;
 
+    const digitoControl = (10 - (suma % 10)) % 10;
     return codigo + digitoControl;
 };
 
-// Función para generar un código de barras único
+// Genera un código de barras único
 const generarCodigoBarrasUnico = async () => {
     let codigoBarras;
     let existe = true;
@@ -26,9 +26,7 @@ const generarCodigoBarrasUnico = async () => {
     while (existe) {
         codigoBarras = generarCodigoBarras();
         const productoExistente = await Product.findOne({ where: { codigoBarras } });
-        if (!productoExistente) {
-            existe = false;
-        }
+        if (!productoExistente) existe = false;
     }
 
     return codigoBarras;
@@ -36,30 +34,28 @@ const generarCodigoBarrasUnico = async () => {
 
 // Agregar un nuevo producto
 const agregarProducto = async (req, res) => {
-    const { codigoBarras, codigoSerial, ...otrosCampos } = req.body;
+    const { descripcion, nombreProducto, cantidad, precio } = req.body;
 
-    if (Object.values(otrosCampos).includes("")) {
-        return res.status(400).json({ msg: "Lo sentimos, debes llenar todos los campos" });
+    // Validar campos obligatorios y tipo de datos
+    if (
+        !descripcion?.trim() ||
+        !nombreProducto?.trim() ||
+        cantidad == null || !Number.isInteger(Number(cantidad)) || Number(cantidad) < 0 ||
+        precio == null || isNaN(precio)
+    ) {
+        return res.status(400).json({ msg: "Debes llenar todos los campos correctamente" });
     }
 
     try {
-        // Verificar si el código de serie ya existe
-        const productoExistente = await Product.findOne({ where: { codigoSerial } });
-        if (productoExistente) {
-            return res.status(400).json({ msg: "El código de serie ya está registrado para otro producto" });
-        }
-
-        // Generar código de barras único
         const codigoBarrasGenerado = await generarCodigoBarrasUnico();
 
-        // Crear el nuevo producto
         const nuevoProducto = await Product.create({
-            ...otrosCampos,
             codigoBarras: codigoBarrasGenerado,
-            codigoSerial,
-            responsableId: req.user.id,  // Aquí asumimos que 'id' es la clave primaria del usuario
-            estado: "Disponible",
-            locacion: req.user.area,
+            descripcion,
+            nombreProducto,
+            cantidad: parseInt(cantidad),
+            precio,
+            estado: "Disponible"
         });
 
         res.status(200).json({
@@ -68,7 +64,7 @@ const agregarProducto = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ msg: "Hubo un error al agregar el producto" });
+        res.status(500).json({ msg: "Error al agregar el producto" });
     }
 };
 
@@ -76,19 +72,50 @@ const agregarProducto = async (req, res) => {
 const listarProductos = async (req, res) => {
     try {
         const productos = await Product.findAll();
-
-        if (productos.length === 0) {
+        if (!productos.length) {
             return res.status(404).json({ msg: "No se encontraron productos" });
         }
 
         res.status(200).json({ productos });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ msg: "Hubo un error al obtener los productos" });
+        res.status(500).json({ msg: "Error al obtener los productos" });
     }
 };
 
-//ACTUALIZAR PRODUCTOS
+// Actualizar un producto por código de barras
+const actualizarProducto = async (req, res) => {
+    const { codigoBarras } = req.params;
+    const { descripcion, nombreProducto, cantidad, precio, estado } = req.body;
+
+    // Validar campos opcionales
+    if (
+        cantidad != null && (!Number.isInteger(Number(cantidad)) || Number(cantidad) < 0) ||
+        precio != null && isNaN(precio)
+    ) {
+        return res.status(400).json({ msg: "Cantidad debe ser un número entero y precio un número válido" });
+    }
+
+    try {
+        const producto = await Product.findOne({ where: { codigoBarras } });
+        if (!producto) {
+            return res.status(404).json({ msg: "Producto no encontrado" });
+        }
+
+        await producto.update({
+            descripcion: descripcion ?? producto.descripcion,
+            nombreProducto: nombreProducto ?? producto.nombreProducto,
+            cantidad: cantidad != null ? parseInt(cantidad) : producto.cantidad,
+            precio: precio != null ? parseFloat(precio) : producto.precio,
+            estado: estado ?? producto.estado
+        });
+
+        res.status(200).json({ msg: "Producto actualizado correctamente", producto });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Error al actualizar el producto" });
+    }
+};
 
 // Eliminar un producto por código de barras
 const eliminarProducto = async (req, res) => {
@@ -96,28 +123,21 @@ const eliminarProducto = async (req, res) => {
 
     try {
         const producto = await Product.findOne({ where: { codigoBarras } });
-
         if (!producto) {
             return res.status(404).json({ msg: "Producto no encontrado" });
         }
 
         await producto.destroy();
-
         res.status(200).json({ msg: "Producto eliminado correctamente" });
     } catch (error) {
         console.error(error);
-        res.status(500).json({ msg: "Hubo un error al eliminar el producto" });
+        res.status(500).json({ msg: "Error al eliminar el producto" });
     }
 };
-
-//VISUALIZACION DE STOCK EN TIEMPO REAL
-
-//GESTION DE STOCK EN TIEMPO REAL
-
-//GESTION DE VENTAS
 
 export {
     agregarProducto,
     listarProductos,
+    actualizarProducto,
     eliminarProducto
-}
+};

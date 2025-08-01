@@ -7,11 +7,6 @@ const Product = sequelize.define('Product', {
     allowNull: false,
     unique: true
   },
-  codigoSerial: { //no va
-    type: DataTypes.STRING,
-    allowNull: false,
-    unique: true
-  },
   descripcion: { 
     type: DataTypes.STRING,
     allowNull: false
@@ -21,7 +16,7 @@ const Product = sequelize.define('Product', {
     allowNull: false
   },
   cantidad: {
-    type: DataTypes.STRING,
+    type: DataTypes.INTEGER,
     allowNull: false
   },
   precio: {
@@ -29,10 +24,6 @@ const Product = sequelize.define('Product', {
     allowNull: false
   },
   estado: {
-    type: DataTypes.STRING,
-    allowNull: false
-  },
-  locacion: { // no va
     type: DataTypes.STRING,
     allowNull: false
   }
