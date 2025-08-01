@@ -1,10 +1,9 @@
-version: '3'
 
 services:
   servidor1:
     container_name: Servidor1P
     build:
-      context: ./servidor1
+      context: ./Servidor1/BackendDist
       dockerfile: Dockerfile
     ports:
       - 5000:5000
