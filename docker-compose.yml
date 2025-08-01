@@ -1,0 +1,67 @@
+version: '3'
+
+services:
+  servidor1:
+    container_name: Servidor1P
+    build:
+      context: ./servidor1
+      dockerfile: Dockerfile
+    ports:
+      - 5000:5000
+    environment:
+        - MYSQL_HOST=maestro1
+        - MYSQL_USER=root
+        - MYSQL_PASSWORD=root
+        - MYSQL_DB=db_informacion
+        - MYSQL_PORT=3306
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: phpmyadmin
+    environment:
+      PMA_HOSTS: "maestro1,maestro2"
+      PMA_ARBITRARY: 1
+    ports:
+      - 8081:80
+  maestro1:
+    container_name: maestro1
+    image: mysql:8.0
+    command:
+      --server-id=1
+      --log-bin=mysql-bin
+      --binlog_format=ROW
+      --gtid_mode=ON
+      --enforce_gtid_consistency=ON
+      --log_slave_updates=ON
+      --read_only=OFF
+      --skip-slave-start
+    environment:
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_DATABASE: db_informacion
+    ports:
+      - 3307:3306
+  maestro2:
+    container_name: maestro2
+    image: mysql:8.0
+    command:
+      --server-id=2
+      --log-bin=mysql-bin
+      --binlog_format=ROW
+      --gtid_mode=ON
+      --enforce_gtid_consistency=ON
+      --log_slave_updates=ON
+      --read_only=OFF
+      --skip-slave-start
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_informacion
+    ports:
+      - 3308:3306
+  nginx:
+    container_name: nginx1
+    build:
+      context: ./nginx
+      dockerfile: dockerfile
+    ports:
+      - 8080:80
+
+
