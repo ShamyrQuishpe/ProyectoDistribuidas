@@ -46,13 +46,27 @@ const agregarProducto = async (req, res) => {
         return res.status(400).json({ msg: "Debes llenar todos los campos correctamente" });
     }
 
+    // Normalizar el nombre del producto (quitar espacios y poner en minúsculas)
+    const nombreNormalizado = nombreProducto.trim().toLowerCase().replace(/\s+/g, " ");
+
     try {
+        // Verificar si ya existe un producto con el mismo nombre normalizado
+        const productoExistente = await Product.findOne({
+            nombreProducto: { $regex: new RegExp(`^${nombreNormalizado}$`, "i") }
+        });
+
+        if (productoExistente) {
+            return res.status(400).json({
+                msg: "Ya existe un producto con ese nombre. Evita duplicados."
+            });
+        }
+
         const codigoBarrasGenerado = await generarCodigoBarrasUnico();
 
         const nuevoProducto = await Product.create({
             codigoBarras: codigoBarrasGenerado,
             descripcion,
-            nombreProducto,
+            nombreProducto: nombreNormalizado,
             cantidad: parseInt(cantidad),
             precio,
             estado: "Disponible"
@@ -63,7 +77,7 @@ const agregarProducto = async (req, res) => {
             producto: nuevoProducto,
         });
 
-        console.log(nuevoProducto)
+        console.log(nuevoProducto);
     } catch (error) {
         console.error(error);
         res.status(500).json({ msg: "Error al agregar el producto" });
@@ -137,9 +151,47 @@ const eliminarProducto = async (req, res) => {
     }
 };
 
+const aumentarCantidad = async (req, res) => {
+    const { codigoBarras, cantidad } = req.body;
+
+    // Validaciones básicas
+    if (!codigoBarras || cantidad == null || !Number.isInteger(Number(cantidad)) || Number(cantidad) <= 0) {
+        return res.status(400).json({ msg: "Debes ingresar un código de barras válido y una cantidad mayor a cero" });
+    }
+
+    try {
+        // Buscar producto por código de barras
+        const producto = await Product.findOne({ codigoBarras });
+
+        if (!producto) {
+            return res.status(404).json({ msg: "Producto no encontrado con ese código de barras" });
+        }
+
+        // Sumar la cantidad actual
+        producto.cantidad += parseInt(cantidad);
+
+        // Si estaba agotado, actualizar estado a disponible
+        if (producto.estado === "Agotado" && producto.cantidad > 0) {
+            producto.estado = "Disponible";
+        }
+
+        await producto.save();
+
+        res.status(200).json({
+            msg: "Cantidad actualizada correctamente",
+            productoActualizado: producto
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Error al actualizar la cantidad del producto" });
+    }
+};
+
 export {
     agregarProducto,
     listarProductos,
     actualizarProducto,
-    eliminarProducto
+    eliminarProducto,
+    aumentarCantidad
 };

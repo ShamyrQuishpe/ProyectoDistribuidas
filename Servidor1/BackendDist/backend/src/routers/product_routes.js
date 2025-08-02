@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { agregarProducto, listarProductos, actualizarProducto, eliminarProducto } from '../controllers/product_controller.js';
+import { agregarProducto, listarProductos, actualizarProducto, eliminarProducto, aumentarCantidad } from '../controllers/product_controller.js';
 
 const router = Router();
 
@@ -10,6 +10,8 @@ router.post('/agregar', agregarProducto);
 router.get('/listar', listarProductos);
 
 router.put('/actualizar/:codigoBarras', actualizarProducto);
+
+router.post('/aumentar', aumentarCantidad)
 
 // Ruta para eliminar producto por código de barras
 router.delete('/eliminar/:codigoBarras', eliminarProducto);
