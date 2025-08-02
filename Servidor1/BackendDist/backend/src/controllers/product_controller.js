@@ -32,11 +32,14 @@ const generarCodigoBarrasUnico = async () => {
     return codigoBarras;
 };
 
+const normalizarTexto = (texto) => {
+    return texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+};
+
 // Agregar un nuevo producto
 const agregarProducto = async (req, res) => {
     const { descripcion, nombreProducto, cantidad, precio } = req.body;
 
-    // Validar campos obligatorios y tipo de datos
     if (
         !descripcion?.trim() ||
         !nombreProducto?.trim() ||
@@ -46,19 +49,15 @@ const agregarProducto = async (req, res) => {
         return res.status(400).json({ msg: "Debes llenar todos los campos correctamente" });
     }
 
-    // Normalizar el nombre del producto (quitar espacios y poner en minúsculas)
-    const nombreNormalizado = nombreProducto.trim().toLowerCase().replace(/\s+/g, " ");
-
     try {
-        // Verificar si ya existe un producto con el mismo nombre normalizado
+        const nombreNormalizado = normalizarTexto(nombreProducto);
+
         const productoExistente = await Product.findOne({
-            nombreProducto: { $regex: new RegExp(`^${nombreNormalizado}$`, "i") }
+            where: { nombreProducto: nombreNormalizado } // <- aquí el cambio
         });
 
         if (productoExistente) {
-            return res.status(400).json({
-                msg: "Ya existe un producto con ese nombre. Evita duplicados."
-            });
+            return res.status(400).json({ msg: "Ya existe un producto con ese nombre. Evita duplicados." });
         }
 
         const codigoBarrasGenerado = await generarCodigoBarrasUnico();
@@ -77,7 +76,6 @@ const agregarProducto = async (req, res) => {
             producto: nuevoProducto,
         });
 
-        console.log(nuevoProducto);
     } catch (error) {
         console.error(error);
         res.status(500).json({ msg: "Error al agregar el producto" });
