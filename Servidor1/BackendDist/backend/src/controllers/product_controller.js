@@ -62,6 +62,8 @@ const agregarProducto = async (req, res) => {
             msg: "Producto agregado correctamente",
             producto: nuevoProducto,
         });
+
+        console.log(nuevoProducto)
     } catch (error) {
         console.error(error);
         res.status(500).json({ msg: "Error al agregar el producto" });
