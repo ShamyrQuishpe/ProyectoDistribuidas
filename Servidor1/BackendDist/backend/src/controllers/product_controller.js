@@ -158,15 +158,15 @@ const aumentarCantidad = async (req, res) => {
     }
 
     try {
-        // Buscar producto por código de barras
-        const producto = await Product.findOne({ codigoBarras });
+        // Buscar producto por código de barras (corregido)
+        const producto = await Product.findOne({ where: { codigoBarras } });
 
         if (!producto) {
             return res.status(404).json({ msg: "Producto no encontrado con ese código de barras" });
         }
 
         // Sumar la cantidad actual
-        producto.cantidad += parseInt(cantidad);
+        producto.cantidad = parseInt(producto.cantidad) + parseInt(cantidad);
 
         // Si estaba agotado, actualizar estado a disponible
         if (producto.estado === "Agotado" && producto.cantidad > 0) {

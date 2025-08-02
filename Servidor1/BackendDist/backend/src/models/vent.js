@@ -7,8 +7,12 @@ const Vent = sequelize.define('Venta', {
     allowNull: false,
     defaultValue: DataTypes.NOW
   },
-  codigosBarras: {
-    type: DataTypes.JSON,  // se guardará un array de códigos de barras
+  productos: {
+    type: DataTypes.JSON, // array de productos con cantidad, precio, subtotal
+    allowNull: false
+  },
+  total: {
+    type: DataTypes.DECIMAL(10,2),
     allowNull: false
   },
   tipoPago: {

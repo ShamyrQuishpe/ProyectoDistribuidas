@@ -4,8 +4,10 @@ import { controlarStock } from '../helper/stock_helper.js';
 
 // Registrar una nueva venta
 const registrarVenta = async (req, res) => {
+
+  // Ahora se espera un array de objetos: [{ codigoBarras, cantidad }]
   const {
-    codigosBarras,
+    productos,
     tipoPago,
     numeroDocumento,
     descripcionDocumento,
@@ -15,13 +17,20 @@ const registrarVenta = async (req, res) => {
   } = req.body;
 
   if (
-    !Array.isArray(codigosBarras) || codigosBarras.length === 0 ||
+    !Array.isArray(productos) || productos.length === 0 ||
     !tipoPago || !['efectivo', 'transferencia'].includes(tipoPago) ||
     !nombreCliente?.trim() ||
     !cedulaCliente?.trim() ||
     !observacion?.trim()
   ) {
     return res.status(400).json({ msg: "Datos incompletos o inválidos" });
+  }
+
+  // Validar estructura de productos: cada uno debe tener codigoBarras y cantidad > 0
+  for (const p of productos) {
+    if (!p.codigoBarras || typeof p.cantidad !== 'number' || p.cantidad <= 0) {
+      return res.status(400).json({ msg: "Cada producto debe tener un código de barras y una cantidad válida (>0)" });
+    }
   }
 
   if (tipoPago === 'transferencia') {
@@ -33,14 +42,16 @@ const registrarVenta = async (req, res) => {
   }
 
   try {
-    // ✅ Validar estado de disponibilidad antes de registrar la venta
+    // Validar disponibilidad y stock suficiente
     const productosNoDisponibles = [];
+    const productosSinStock = [];
 
-    for (const codigo of codigosBarras) {
-      const producto = await Product.findOne({ where: { codigoBarras: codigo } });
-
+    for (const { codigoBarras, cantidad } of productos) {
+      const producto = await Product.findOne({ where: { codigoBarras } });
       if (!producto || producto.estado === 'Agotado') {
-        productosNoDisponibles.push(codigo);
+        productosNoDisponibles.push(codigoBarras);
+      } else if (producto.cantidad < cantidad) {
+        productosSinStock.push({ codigoBarras, disponible: producto.cantidad });
       }
     }
 
@@ -50,10 +61,34 @@ const registrarVenta = async (req, res) => {
         codigosAgotados: productosNoDisponibles
       });
     }
+    if (productosSinStock.length > 0) {
+      return res.status(400).json({
+        msg: "No hay suficiente stock para algunos productos.",
+        productosSinStock
+      });
+    }
 
-    // ✅ Registrar la venta
+    // Calcular el total de la venta
+    let total = 0;
+    const productosConPrecio = [];
+    for (const { codigoBarras, cantidad } of productos) {
+      const producto = await Product.findOne({ where: { codigoBarras } });
+      if (producto) {
+        const subtotal = producto.precio * cantidad;
+        total += subtotal;
+        productosConPrecio.push({
+          codigoBarras,
+          cantidad,
+          precio: producto.precio,
+          subtotal
+        });
+      }
+    }
+
+    // Registrar la venta (guardamos el array de productos con precio como JSON)
     const venta = await Vent.create({
-      codigosBarras,
+      productos: JSON.stringify(productosConPrecio),
+      total,
       tipoPago,
       numeroDocumento: tipoPago === 'transferencia' ? numeroDocumento : null,
       descripcionDocumento: tipoPago === 'transferencia' ? descripcionDocumento : null,
@@ -62,12 +97,18 @@ const registrarVenta = async (req, res) => {
       observacion
     });
 
-    // ✅ Descontar stock
-    await controlarStock(codigosBarras);
+    // Descontar stock según cantidad de cada producto
+    for (const { codigoBarras, cantidad } of productos) {
+      await controlarStock(codigoBarras, cantidad);
+    }
 
     res.status(201).json({
       msg: "Venta registrada correctamente",
-      venta
+      venta: {
+        ...venta.toJSON(),
+        productos: productosConPrecio,
+        total
+      }
     });
   } catch (error) {
     console.error(error);
