@@ -1,6 +1,7 @@
 services:
+
   servidor1:
-    container_name: Servidor1P
+    container_name: servidor1
     build:
       context: ./Servidor1/BackendDist
       dockerfile: Dockerfile
@@ -12,6 +13,45 @@ services:
       - MYSQL_PASSWORD=root
       - MYSQL_DB=db_informacion
       - MYSQL_PORT=3306
+      - SERVER_NAME=servidor1
+    networks:
+      - red_distribuida
+    depends_on:
+      - maestro1
+
+  servidor2:
+    container_name: servidor2
+    build:
+      context: ./Servidor2/BackendDist
+      dockerfile: Dockerfile
+    ports:
+      - 5001:5000
+    environment:
+      - MYSQL_HOST=maestro1
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DB=db_informacion
+      - MYSQL_PORT=3306
+      - SERVER_NAME=servidor2
+    networks:
+      - red_distribuida
+    depends_on:
+      - maestro1
+
+  servidor3:
+    container_name: servidor3
+    build:
+      context: ./Servidor3/BackendDist
+      dockerfile: Dockerfile
+    ports:
+      - 5002:5000
+    environment:
+      - MYSQL_HOST=maestro1
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - MYSQL_DB=db_informacion
+      - MYSQL_PORT=3306
+      - SERVER_NAME=servidor3
     networks:
       - red_distribuida
     depends_on:
@@ -83,12 +123,16 @@ services:
   nginx:
     container_name: nginx1
     build:
-      context: ./nginx
-      dockerfile: dockerfile
+      context: .
+      dockerfile: nginx/Dockerfile
     ports:
-      - 8080:80
+      - 80:80
     networks:
       - red_distribuida
+    depends_on:
+      - servidor1
+      - servidor2
+      - servidor3
 
 networks:
   red_distribuida:
