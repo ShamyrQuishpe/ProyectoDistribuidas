@@ -49,7 +49,7 @@ const ProductModal = ({ isOpen, onClose, onSubmit, initialData, onStockUpdated }
       return;
     }
     try {
-      const res = await fetch("http://localhost:5000/product/aumentar", {
+      const res = await fetch("/product/aumentar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ codigoBarras: initialData.codigoBarras, cantidad: Number(aumentar) })

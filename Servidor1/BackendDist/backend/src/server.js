@@ -18,6 +18,14 @@ app.use(cors())
 app.use(express.json())
 
 // Rutas
+
+// Ruta para identificar el backend
+app.get('/api/ping', (req, res) => {
+    res.json({
+        servidor: process.env.SERVER_NAME || 'desconocido'
+    });
+});
+
 app.get('/',(req,res)=>{
     res.send("Server on")
 })

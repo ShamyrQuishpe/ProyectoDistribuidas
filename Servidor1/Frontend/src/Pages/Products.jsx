@@ -23,7 +23,7 @@ function ProductsPage() {
   // Listar productos
   const fetchProducts = () => {
     setLoading(true);
-    axios.get(`http://localhost:5000/product/listar`)
+    axios.get(`/product/listar`)
       .then((res) => {
         setProducts(res.data.productos || []);
       })
@@ -77,7 +77,7 @@ function ProductsPage() {
     setLoading(true);
     if (editProduct && editProduct.codigoBarras) {
       // Modificar producto por código de barras
-      axios.put(`http://localhost:5000/product/actualizar/${editProduct.codigoBarras}`, form)
+      axios.put(`/product/actualizar/${editProduct.codigoBarras}`, form)
         .then((res) => {
           if (res.data && res.data.msg && res.data.msg.includes("correctamente")) {
             setSuccess(res.data.msg);
@@ -91,7 +91,7 @@ function ProductsPage() {
         .finally(() => setLoading(false));
     } else {
       // Agregar producto
-      axios.post(`http://localhost:5000/product/agregar`, form)
+      axios.post(`/product/agregar`, form)
         .then((res) => {
           if (res.data && res.data.msg && res.data.msg.includes("correctamente")) {
             setSuccess(res.data.msg);
@@ -114,7 +114,7 @@ function ProductsPage() {
     setLoading(true);
     setError("");
     setSuccess("");
-    axios.delete(`http://localhost:5000/product/eliminar/${codigoBarras}`)
+    axios.delete(`/product/eliminar/${codigoBarras}`)
       .then((res) => {
         setSuccess(res.data.msg || "Producto eliminado correctamente");
         fetchProducts();

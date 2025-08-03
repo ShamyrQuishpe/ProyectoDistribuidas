@@ -1,6 +1,6 @@
-
 import React, { useState, useEffect } from "react";
-import {Link, Outlet} from 'react-router-dom';
+import { Link, Outlet } from 'react-router-dom';
+import axios from "axios";
 
 const COLORS = {
   dark: "#1A1A19",      // fondo header/footer/sidebar
@@ -12,9 +12,14 @@ const COLORS = {
 
 function Dashboard() {
   const [view, setView] = useState("users");
-
   const [user, setUser] = useState({ nombre: "Administrador" });
+  const [servidor, setServidor] = useState("");
 
+  useEffect(() => {
+    axios.get("/api/ping")
+      .then((res) => setServidor(res.data.servidor))
+      .catch(() => setServidor("desconocido"));
+  }, []);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: COLORS.light }}>
@@ -26,6 +31,9 @@ function Dashboard() {
         <h1 className="text-xl font-bold" style={{ color: COLORS.sand }}>Gestión de Inventario</h1>
         <div className="flex items-center gap-4">
           <span className="font-semibold" style={{ color: COLORS.sand }}>👤 {user.nombre}</span>
+          <span className="font-semibold text-xs px-2 py-1 rounded" style={{ background: COLORS.sand, color: COLORS.dark }}>
+            Backend: {servidor}
+          </span>
           <Link
             to="/"
             className="px-4 py-2 rounded font-semibold"

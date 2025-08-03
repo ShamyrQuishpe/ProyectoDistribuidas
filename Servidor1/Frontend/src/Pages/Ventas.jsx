@@ -33,7 +33,7 @@ function VentasPage() {
   }, 0);
 
   useEffect(() => {
-    axios.get("http://localhost:5000/product/listar")
+    axios.get("/product/listar")
       .then(res => setProductos(res.data.productos || []))
       .catch(() => setProductos([]));
   }, []);
@@ -91,7 +91,7 @@ function VentasPage() {
       return;
     }
     setLoading(true);
-    axios.post("http://localhost:5000/vent/registrarVenta", {
+    axios.post("/vent/registrarVenta", {
       productos: selected.map(p => ({ codigoBarras: p.codigoBarras, cantidad: Number(p.cantidad) })),
       tipoPago,
       numeroDocumento: tipoPago === "transferencia" ? numeroDocumento : undefined,

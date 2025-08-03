@@ -32,7 +32,7 @@ function LoginPage() {
     }
     setLoading(true);
     try {
-      const res = await axios.post(`http://localhost:5000/users/login`, form);
+      const res = await axios.post(`/users/login`, form);
       navigate("/dashboard/products");
       if (res.data && res.data.nombre) {
       } else {
