@@ -97,6 +97,8 @@ services:
       MYSQL_DATABASE: db_informacion
     ports:
       - 3307:3306
+    volumes:
+      - maestro1_data:/var/lib/mysql
     networks:
       - red_distribuida
 
@@ -117,6 +119,8 @@ services:
       MYSQL_DATABASE: db_informacion
     ports:
       - 3308:3306
+    volumes:
+      - maestro2_data:/var/lib/mysql
     networks:
       - red_distribuida
 
@@ -137,3 +141,9 @@ services:
 networks:
   red_distribuida:
     driver: bridge
+
+volumes:
+  maestro1_data:
+  maestro1_logs:
+  maestro2_data:
+  maestro2_logs:
